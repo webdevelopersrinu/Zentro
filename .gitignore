@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Test artifacts
+coverage
+test-results
+playwright-report
+e2e/.tmp
+
 # Secrets — never commit real env files or keys
 .env
 .env.*

@@ -1,0 +1,16 @@
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.online {
+  background: var(--success);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 25%, transparent);
+}
+
+.offline {
+  background: var(--text-faint);
+  opacity: 0.6;
+}

@@ -1,0 +1,13 @@
+.callback {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-5);
+  min-height: 100dvh;
+  color: var(--accent);
+}
+
+.message {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}

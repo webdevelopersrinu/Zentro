@@ -7,30 +7,44 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "smoke": "node test/smoke.test.js",
-    "test:create": "node test/create.test.js",
-    "test:update": "node test/update.test.js",
-    "test:delete": "node test/delete.test.js",
-    "test:crud": "npm run test:create && npm run test:update && npm run test:delete",
-    "seed": "node test/seed.js",
-    "seed:clean": "node test/seed.js --clean"
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects integration --maxWorkers=50%",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --selectProjects unit --watch",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
+    "test:ci": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --ci --coverage --runInBand",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "seed": "node scripts/seed.js",
+    "seed:clean": "node scripts/seed.js --clean"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.5.2",
     "express-session": "^1.19.0",
+    "helmet": "^8.2.0",
+    "hpp": "^0.2.3",
     "iovalkey": "^0.3.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.5.1",
+    "morgan": "^1.11.0",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
+    "sanitize-html": "^2.17.5",
     "socket.io": "^4.7.5",
-    "socket.io-valkey-adapter": "^0.1.1"
+    "socket.io-valkey-adapter": "^0.1.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.3"
+    "@playwright/test": "^1.61.1",
+    "jest": "^30.4.2",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2"
   }
 }

@@ -1,0 +1,93 @@
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-5);
+}
+
+.card {
+  width: min(420px, 100%);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-lg);
+  animation: fade-in-up var(--duration-base) var(--ease-out);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+/* Echoes the glass tile the logo sits on. */
+.mark {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--accent-subtle);
+}
+
+.title {
+  font-size: var(--text-3xl);
+}
+
+.tagline {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  color: var(--accent);
+}
+
+.feature div {
+  display: flex;
+  flex-direction: column;
+}
+
+.feature strong {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.feature span {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.legal {
+  margin-top: var(--space-6);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--text-faint);
+}

@@ -1,0 +1,77 @@
+.row {
+  display: flex;
+  gap: var(--space-2);
+  animation: fade-in-up var(--duration-fast) var(--ease-out);
+}
+
+.rowMine {
+  justify-content: flex-end;
+}
+
+/* Reserves the avatar column so consecutive messages stay aligned. */
+.gutter {
+  width: 28px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: min(70%, 560px);
+}
+
+.rowMine .stack {
+  align-items: flex-end;
+}
+
+.author {
+  padding-left: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.bubble {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.mine {
+  background: var(--bubble-me);
+  color: var(--bubble-me-text);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.theirs {
+  background: var(--bubble-them);
+  color: var(--bubble-them-text);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.sending {
+  opacity: 0.6;
+}
+
+.failed {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
+}
+
+.meta {
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.retry {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--danger);
+  text-decoration: underline;
+}

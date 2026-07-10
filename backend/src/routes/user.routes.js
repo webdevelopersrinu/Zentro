@@ -1,31 +1,12 @@
 import { Router } from "express";
-import { User } from "../models/User.js";
 import { requireAuth } from "../middleware/auth.js";
+import { validateQuery } from "../middleware/validate.js";
+import * as controller from "../controllers/user.controller.js";
+import { searchQuerySchema } from "../validators/user.validators.js";
 
 const router = Router();
 
-// GET /api/users/search?q=al
-// Live username search for the invite box. Returns matching unique usernames
-// (excluding yourself). Used when the creator searches people to invite.
-router.get("/search", requireAuth, async (req, res) => {
-  const q = (req.query.q || "").trim().toLowerCase();
-  if (!q) return res.json({ users: [] });
-
-  const users = await User.find({
-    username: { $regex: q, $options: "i" },
-    _id: { $ne: req.user.id },
-  })
-    .select("username name avatarUrl")
-    .limit(10);
-
-  return res.json({
-    users: users.map((u) => ({
-      id: u._id,
-      username: u.username,
-      name: u.name || u.username,
-      avatarUrl: u.avatarUrl || "",
-    })),
-  });
-});
+router.use(requireAuth);
+router.get("/search", validateQuery(searchQuerySchema), controller.search);
 
 export default router;

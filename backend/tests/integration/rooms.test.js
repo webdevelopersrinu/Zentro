@@ -1,0 +1,278 @@
+import { connectTestDB, resetTestDB, disconnectTestDB } from "../helpers/setup.js";
+import { createUser, createRoom, anonymous } from "../helpers/factories.js";
+import { ROOM_VISIBILITY } from "../../src/constants/index.js";
+
+const PUBLIC = { name: "town-square", visibility: ROOM_VISIBILITY.PUBLIC };
+const PRIVATE = { name: "war-room", visibility: ROOM_VISIBILITY.PRIVATE };
+
+describe("Rooms API", () => {
+  let owner; // creator / admin
+  let outsider;
+
+  beforeAll(connectTestDB);
+  afterAll(disconnectTestDB);
+
+  beforeEach(async () => {
+    await resetTestDB();
+    owner = await createUser({ username: "owner" });
+    outsider = await createUser({ username: "outsider" });
+  });
+
+  describe("POST /api/rooms", () => {
+    it("creates a room with the caller as creator and sole member", async () => {
+      const res = await owner.client.post("/api/rooms", PUBLIC);
+
+      expect(res.status).toBe(201);
+      expect(res.body.room).toMatchObject({
+        name: PUBLIC.name,
+        visibility: ROOM_VISIBILITY.PUBLIC,
+        isCreator: true,
+        isMember: true,
+        memberCount: 1,
+        requestCount: 0,
+      });
+    });
+
+    it("defaults to public", async () => {
+      const room = await createRoom(owner.client, { name: "defaulted" });
+      expect(room.visibility).toBe(ROOM_VISIBILITY.PUBLIC);
+    });
+
+    it.each([
+      ["an invalid visibility", { name: "x", visibility: "secret" }],
+      ["a blank name", { name: "   " }],
+      ["a missing name", {}],
+    ])("rejects %s", async (_label, body) => {
+      const res = await owner.client.post("/api/rooms", body);
+      expect(res.status).toBe(400);
+    });
+
+    it("rejects an anonymous caller", async () => {
+      const res = await anonymous().post("/api/rooms", PUBLIC);
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("GET /api/rooms/discover", () => {
+    it("lists rooms you are not in, including locked private ones", async () => {
+      await createRoom(owner.client, PUBLIC);
+      await createRoom(owner.client, PRIVATE);
+
+      const res = await outsider.client.get("/api/rooms/discover");
+
+      expect(res.status).toBe(200);
+      expect(res.body.rooms.map((r) => r.name).sort()).toEqual([
+        "town-square",
+        "war-room",
+      ]);
+      expect(res.body.rooms.every((r) => r.isMember === false)).toBe(true);
+    });
+
+    it("excludes rooms you already belong to", async () => {
+      await createRoom(owner.client, PUBLIC);
+      const res = await owner.client.get("/api/rooms/discover");
+      expect(res.body.rooms).toEqual([]);
+    });
+  });
+
+  describe("Joining a PUBLIC room", () => {
+    it("anyone may join instantly", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+
+      const res = await outsider.client.post(`/api/rooms/${room.id}/join`);
+      expect(res.status).toBe(200);
+      expect(res.body.joined).toBe(true);
+
+      const mine = await outsider.client.get("/api/rooms");
+      expect(mine.body.rooms).toHaveLength(1);
+      expect(mine.body.rooms[0].memberCount).toBe(2);
+    });
+
+    it("rejects joining twice", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const res = await outsider.client.post(`/api/rooms/${room.id}/join`);
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Joining a PRIVATE room", () => {
+    it("records a request without granting membership", async () => {
+      const room = await createRoom(owner.client, PRIVATE);
+
+      const res = await outsider.client.post(`/api/rooms/${room.id}/join`);
+      expect(res.status).toBe(200);
+      expect(res.body.requested).toBe(true);
+      expect(res.body.room).toMatchObject({ isMember: false, hasRequested: true });
+    });
+
+    it("still denies message history to a requester", async () => {
+      const room = await createRoom(owner.client, PRIVATE);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const res = await outsider.client.get(`/api/rooms/${room.id}/messages`);
+      expect(res.status).toBe(403);
+    });
+
+    it("does not duplicate a repeated request", async () => {
+      const room = await createRoom(owner.client, PRIVATE);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const res = await owner.client.get(`/api/rooms/${room.id}/requests`);
+      expect(res.body.requests).toHaveLength(1);
+    });
+  });
+
+  describe("Approving and rejecting requests", () => {
+    let room;
+
+    beforeEach(async () => {
+      room = await createRoom(owner.client, PRIVATE);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+    });
+
+    it("lets only the creator list requests", async () => {
+      await expect(
+        outsider.client.get(`/api/rooms/${room.id}/requests`)
+      ).resolves.toMatchObject({ status: 403 });
+    });
+
+    it("lets only the creator approve", async () => {
+      const res = await outsider.client.post(
+        `/api/rooms/${room.id}/requests/${outsider.user.id}/approve`
+      );
+      expect(res.status).toBe(403);
+    });
+
+    it("grants membership and read access on approval", async () => {
+      const res = await owner.client.post(
+        `/api/rooms/${room.id}/requests/${outsider.user.id}/approve`
+      );
+      expect(res.status).toBe(200);
+      expect(res.body.room).toMatchObject({ memberCount: 2, requestCount: 0 });
+
+      const read = await outsider.client.get(`/api/rooms/${room.id}/messages`);
+      expect(read.status).toBe(200);
+    });
+
+    it("404s when approving an already-cleared request", async () => {
+      const url = `/api/rooms/${room.id}/requests/${outsider.user.id}/approve`;
+      await owner.client.post(url);
+
+      const res = await owner.client.post(url);
+      expect(res.status).toBe(404);
+    });
+
+    it("removes the request without granting access on rejection", async () => {
+      const res = await owner.client.post(
+        `/api/rooms/${room.id}/requests/${outsider.user.id}/reject`
+      );
+      expect(res.status).toBe(200);
+      expect(res.body.room.memberCount).toBe(1);
+
+      const read = await outsider.client.get(`/api/rooms/${room.id}/messages`);
+      expect(read.status).toBe(403);
+    });
+  });
+
+  describe("Invites", () => {
+    it("lets the creator add a user directly by username", async () => {
+      const room = await createRoom(owner.client, PRIVATE);
+
+      const res = await owner.client.post(`/api/rooms/${room.id}/invite`, {
+        username: outsider.user.username,
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.room.memberCount).toBe(2);
+
+      const read = await outsider.client.get(`/api/rooms/${room.id}/messages`);
+      expect(read.status).toBe(200);
+    });
+
+    it("forbids non-creators from inviting", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const res = await outsider.client.post(`/api/rooms/${room.id}/invite`, {
+        username: owner.user.username,
+      });
+      expect(res.status).toBe(403);
+    });
+
+    it("404s on an unknown username", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      const res = await owner.client.post(`/api/rooms/${room.id}/invite`, {
+        username: "ghost",
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("Leaving", () => {
+    it("lets a member leave", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const res = await outsider.client.post(`/api/rooms/${room.id}/leave`);
+      expect(res.status).toBe(200);
+
+      const mine = await outsider.client.get("/api/rooms");
+      expect(mine.body.rooms).toEqual([]);
+    });
+
+    it("forbids the creator from leaving their own room", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      const res = await owner.client.post(`/api/rooms/${room.id}/leave`);
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Update and delete", () => {
+    it("lets the creator rename and change visibility", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+
+      const res = await owner.client.patch(`/api/rooms/${room.id}`, {
+        name: "renamed",
+        visibility: ROOM_VISIBILITY.PRIVATE,
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.room).toMatchObject({
+        name: "renamed",
+        visibility: ROOM_VISIBILITY.PRIVATE,
+      });
+    });
+
+    it("forbids non-creators from updating or deleting", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+      await outsider.client.post(`/api/rooms/${room.id}/join`);
+
+      const patched = await outsider.client.patch(`/api/rooms/${room.id}`, {
+        name: "x",
+      });
+      const deleted = await outsider.client.delete(`/api/rooms/${room.id}`);
+
+      expect(patched.status).toBe(403);
+      expect(deleted.status).toBe(403);
+    });
+
+    it("deletes the room, and 404s on a second delete", async () => {
+      const room = await createRoom(owner.client, PUBLIC);
+
+      await expect(
+        owner.client.delete(`/api/rooms/${room.id}`)
+      ).resolves.toMatchObject({ status: 200 });
+      await expect(
+        owner.client.delete(`/api/rooms/${room.id}`)
+      ).resolves.toMatchObject({ status: 404 });
+    });
+  });
+
+  describe("Bad identifiers", () => {
+    it("404s a malformed room id rather than 500ing", async () => {
+      const res = await owner.client.get("/api/rooms/not-an-objectid/messages");
+      expect(res.status).toBe(404);
+    });
+  });
+});

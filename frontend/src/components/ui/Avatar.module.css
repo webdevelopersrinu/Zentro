@@ -1,0 +1,33 @@
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: hsl(var(--avatar-hue) 55% 30%);
+  color: hsl(var(--avatar-hue) 85% 88%);
+  user-select: none;
+}
+
+/* :global escapes the module scope to reach <html data-theme>, which the
+   bundler would otherwise rewrite into a hashed, never-matching class. */
+:global(:root[data-theme="light"]) .avatar {
+  background: hsl(var(--avatar-hue) 70% 90%);
+  color: hsl(var(--avatar-hue) 55% 32%);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.initials {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: calc(var(--avatar-size) * 0.38);
+  line-height: 1;
+}

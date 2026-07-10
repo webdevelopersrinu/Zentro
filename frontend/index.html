@@ -1,11 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>chat-room</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>Zentro — Talk in real time</title>
+  <meta name="description"
+    content="Zentro is a real-time chat app. Sign in with Google or GitHub, join public rooms, and create private rooms only you can approve." />
+
+  <!-- Brand marks generated from the Zentro logo -->
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0D0F17" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#F7F8FC" media="(prefers-color-scheme: light)" />
+
+  <meta property="og:title" content="Zentro — Talk in real time" />
+  <meta property="og:image" content="/icon-512.png" />
+  <meta property="og:type" content="website" />
+
+  <!-- display=swap: text paints immediately in a fallback, no invisible-text flash -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <script>
+    // Runs before first paint, so the theme never flashes the wrong colour.
+    (() => {
+      const saved = localStorage.getItem('zentro_theme');
+      const system = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = saved || system;
+    })();
+  </script>
 </head>
 
 <body>

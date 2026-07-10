@@ -1,0 +1,22 @@
+{
+  "users": {
+    "alice": {
+      "id": "6a50a6501839077954a6446f",
+      "username": "alice",
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNTBhNjUwMTgzOTA3Nzk1NGE2NDQ2ZiIsInVzZXJuYW1lIjoiYWxpY2UiLCJuYW1lIjoiQUxJQ0UiLCJhdmF0YXJVcmwiOiIiLCJpYXQiOjE3ODM2NzAzNTIsImV4cCI6MTc4MzY3MTI1Mn0.zNVvr8jaw5HTb6fO6m0Fjz8MepQtTPe7PhwTCULrNAU",
+      "refreshToken": "0112dbe59a762cd5eb5c603d083f4ce1f558b2b1648eca0d9ef7edd7cb49aac7"
+    },
+    "bob": {
+      "id": "6a50a6501839077954a64473",
+      "username": "bob",
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNTBhNjUwMTgzOTA3Nzk1NGE2NDQ3MyIsInVzZXJuYW1lIjoiYm9iIiwibmFtZSI6IkJPQiIsImF2YXRhclVybCI6IiIsImlhdCI6MTc4MzY3MDM1MiwiZXhwIjoxNzgzNjcxMjUyfQ.pS6GnWaC36AxbAQxvypUhGIBJNcHaR4zaQJbrrncg6A",
+      "refreshToken": "468e419024b915463588a5ed1d62e3b8ad9cfa2c89120636cb68f12fb3e848ba"
+    },
+    "mallory": {
+      "id": "6a50a6501839077954a64477",
+      "username": "mallory",
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhNTBhNjUwMTgzOTA3Nzk1NGE2NDQ3NyIsInVzZXJuYW1lIjoibWFsbG9yeSIsIm5hbWUiOiJNQUxMT1JZIiwiYXZhdGFyVXJsIjoiIiwiaWF0IjoxNzgzNjcwMzUyLCJleHAiOjE3ODM2NzEyNTJ9.BEABZQfHUo4LyPM14Kp7E9GHhUMgUYvOFbwdMs4VsY0",
+      "refreshToken": "7666809a21733f983910ea2d84f07343f7dbe2c602368ccb9f3225cd73d8b3a8"
+    }
+  }
+}

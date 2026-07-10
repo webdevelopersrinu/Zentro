@@ -27,9 +27,6 @@ const userSchema = new mongoose.Schema(
     name: { type: String, trim: true },       // full display name, e.g. "Srinu Desetti"
     email: { type: String, trim: true, lowercase: true },
     avatarUrl: { type: String },              // profile picture URL
-
-    // Legacy password login is no longer used, kept optional so old rows work.
-    passwordHash: { type: String },
   },
   { timestamps: true }
 );

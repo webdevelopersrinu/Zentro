@@ -3,81 +3,62 @@
 import "./config/env.js";
 
 import http from "http";
-import express from "express";
-import cors from "cors";
-import session from "express-session";
 import { Server } from "socket.io";
 
-import { connectDB } from "./config/db.js";
+import { createApp } from "./app.js";
+import { connectDB, disconnectDB } from "./config/db.js";
 import { attachValkeyAdapter } from "./config/valkey.js";
 import { registerSocketHandlers } from "./socket/index.js";
-import passport from "./config/passport.js";
+import { setIO } from "./lib/io.js";
+import { setTokenStore, MongoTokenStore } from "./lib/tokenStore.js";
+import { logger } from "./lib/logger.js";
 
-import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/user.routes.js";
-import roomRoutes from "./routes/room.routes.js";
-
-const {
-  PORT = 4000,
-  MONGO_URI,
-  VALKEY_URL,
-  CLIENT_ORIGIN = "*",
-  SESSION_SECRET = "change_this_session_secret",
-  NODE_ENV = "development",
-} = process.env;
+const { PORT = 4000, MONGO_URI, VALKEY_URL, CLIENT_ORIGIN = "*" } = process.env;
 
 async function start() {
-  // 1. Database (shared by all servers)
   await connectDB(MONGO_URI);
 
-  // 2. HTTP + Express API
-  const app = express();
-  // Behind the ALB / Nginx we sit behind a proxy — trust it so secure cookies
-  // and the correct protocol are detected for the OAuth redirect flow.
-  app.set("trust proxy", 1);
-  app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
-  app.use(express.json());
+  // Refresh tokens live in MongoDB: durable, replicated, isolated in their own
+  // collection, and expired automatically by a TTL index. Valkey is a cache —
+  // a restart or a stray FLUSHDB there would log out every user.
+  setTokenStore(new MongoTokenStore());
+  logger.info("✅ Refresh-token store backed by MongoDB");
 
-  // Short-lived session used ONLY during the OAuth handshake (Passport stores
-  // the CSRF `state` here). Sticky sessions at the ALB keep the round-trip on
-  // one server, so the default in-memory store is fine. After login the app
-  // uses the JWT, not this session.
-  app.use(
-    session({
-      secret: SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        secure: NODE_ENV === "production", // HTTPS-only cookie in prod
-        sameSite: "lax",
-        maxAge: 10 * 60 * 1000, // 10 min — only needs to survive the redirect
-      },
-    })
-  );
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Health check. Exposed at both paths: "/health" for a direct hit on :4000,
-  // and "/api/health" because Nginx/ALB forward the "/api" prefix unchanged.
-  const health = (_req, res) => res.json({ ok: true, pid: process.pid });
-  app.get("/health", health);
-  app.get("/api/health", health);
-  app.use("/api/auth", authRoutes);
-  app.use("/api/users", userRoutes);
-  app.use("/api/rooms", roomRoutes);
-
+  const app = createApp();
   const server = http.createServer(app);
 
-  // 3. Socket.IO + Valkey adapter (this is what syncs the 2 servers)
+  // The Valkey adapter is what keeps multiple servers in sync.
   const io = new Server(server, { cors: { origin: CLIENT_ORIGIN } });
-  await attachValkeyAdapter(io, VALKEY_URL);
+  const valkey = await attachValkeyAdapter(io, VALKEY_URL);
   registerSocketHandlers(io);
 
-  // 4. Listen
+  // Let HTTP services push events to a specific user (see utils/notify.js).
+  setIO(io);
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`❌ Port ${PORT} is already in use. Stop the other process, or run with a different PORT.`);
+      process.exit(1);
+    }
+    throw err;
+  });
+
   server.listen(PORT, () =>
     console.log(`🚀 Server listening on :${PORT} (pid ${process.pid})`)
   );
+
+  const shutdown = async (signal) => {
+    logger.info(`\n${signal} received — shutting down`);
+    server.close();
+    io.close();
+    valkey.pubClient.disconnect();
+    valkey.subClient.disconnect();
+    await disconnectDB();
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 }
 
 start().catch((err) => {

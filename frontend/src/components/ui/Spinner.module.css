@@ -1,0 +1,9 @@
+.spinner {
+  display: inline-grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.spinner svg {
+  animation: spin 700ms linear infinite;
+}

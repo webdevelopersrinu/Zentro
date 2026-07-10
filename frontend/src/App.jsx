@@ -1,40 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { ToastProvider } from './components/Toast';
-import Login from './pages/Login';
-import Chat from './pages/Chat';
-import { mockStore } from './utils/mockStore';
-import { captureTokenFromUrl, getUser, logout as authLogout } from './utils/auth';
-import './styles/theme.css';
+import { Suspense, lazy, useEffect } from "react";
 
-function App() {
-  // On first load, grab a token if the backend just redirected us here after
-  // a successful Google/GitHub login, then read who we are from the JWT.
-  const [user, setUser] = useState(() => {
-    captureTokenFromUrl();
-    return getUser();
-  });
+import { useAuth } from "./context/AuthContext.jsx";
+import { SocketProvider } from "./context/SocketContext.jsx";
+import Login from "./pages/Login.jsx";
+import AuthCallback from "./pages/AuthCallback.jsx";
 
-  // Bridge the real identity into the existing chat store so the chat UI (rooms,
-  // messages, members) works with the logged-in username.
+// Code-split: the login screen paints without downloading the chat bundle.
+const Chat = lazy(() => import("./pages/Chat.jsx"));
+
+/** The OAuth callback lands on /auth/success; there is nothing to read from it. */
+function useCleanCallbackUrl(isAuthenticated) {
   useEffect(() => {
-    if (user) mockStore.login(user.username);
-  }, [user]);
-
-  const handleLogout = () => {
-    authLogout();        // clear the JWT (ThunderID)
-    mockStore.logout();  // clear the chat-store session
-    setUser(null);
-  };
-
-  return (
-    <ToastProvider>
-      {user ? (
-        <Chat onLogout={handleLogout} />
-      ) : (
-        <Login />
-      )}
-    </ToastProvider>
-  );
+    if (isAuthenticated && window.location.pathname === "/auth/success") {
+      window.history.replaceState({}, "", "/");
+    }
+  }, [isAuthenticated]);
 }
 
-export default App;
+export default function App() {
+  const { isLoading, isAuthenticated } = useAuth();
+
+  useCleanCallbackUrl(isAuthenticated);
+
+  if (isLoading) return <AuthCallback />;
+  if (!isAuthenticated) return <Login />;
+
+  // Mounted only once authenticated: the socket needs an access token, and
+  // keeping it below AuthProvider means signing out tears the connection down.
+  return (
+    <SocketProvider>
+      <Suspense fallback={<AuthCallback message="Loading your rooms…" />}>
+        <Chat />
+      </Suspense>
+    </SocketProvider>
+  );
+}

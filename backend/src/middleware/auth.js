@@ -1,16 +1,21 @@
-import { verifyToken } from "../utils/token.js";
+import { verifyAccessToken } from "../services/token.service.js";
+import { AppError } from "../utils/AppError.js";
 
-// Protects HTTP routes. Reads "Authorization: Bearer <token>", verifies it,
-// and attaches { id, username } to req.user. Rejects if missing/invalid.
-export function requireAuth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: "Missing token" });
+const bearer = (req) => {
+  const header = req.headers.authorization ?? "";
+  return header.startsWith("Bearer ") ? header.slice(7) : null;
+};
+
+/** Verifies the JWT and attaches { id, username, name, avatarUrl } to req.user. */
+export const requireAuth = (req, _res, next) => {
+  const token = bearer(req);
+  if (!token) return next(AppError.unauthorized("Missing token"));
 
   try {
-    req.user = verifyToken(token);
+    req.user = verifyAccessToken(token);
     next();
   } catch {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    // 401 tells the client to silently refresh and retry once.
+    next(AppError.unauthorized("Invalid or expired token"));
   }
-}
+};

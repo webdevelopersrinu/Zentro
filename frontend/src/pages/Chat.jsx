@@ -1,108 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
-import ChatPanel from '../components/ChatPanel';
-import MembersPanel from '../components/MembersPanel';
-import CreateRoomModal from '../components/CreateRoomModal';
-import InviteModal from '../components/InviteModal';
-import { mockStore } from '../utils/mockStore';
+import { useState } from "react";
+import { Compass, MessageSquare } from "lucide-react";
 
-export default function Chat({ onLogout }) {
-  const [storeState, setStoreState] = useState(mockStore.getState());
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileMembersOpen, setMobileMembersOpen] = useState(false);
+import { Sidebar } from "../components/chat/Sidebar.jsx";
+import { ConversationPanel } from "../components/chat/ConversationPanel.jsx";
+import { MembersPanel } from "../components/chat/MembersPanel.jsx";
+import { LockedRoomCard } from "../components/chat/LockedRoomCard.jsx";
+import { ConnectionBanner } from "../components/chat/ConnectionBanner.jsx";
+import { CreateRoomModal } from "../components/modals/CreateRoomModal.jsx";
+import { InviteModal } from "../components/modals/InviteModal.jsx";
+import { EmptyState } from "../components/ui/EmptyState.jsx";
+import { useChatState } from "../hooks/useChatState.js";
+import { useCreateRoom } from "../hooks/useRooms.js";
+import { useSocket } from "../context/SocketContext.jsx";
+import { useToast } from "../context/ToastContext.jsx";
+import { cx } from "../lib/cx.js";
+import styles from "./Chat.module.css";
 
-  // Subscribe to state updates in the store
-  useEffect(() => {
-    const unsubscribe = mockStore.subscribe((newState) => {
-      setStoreState(newState);
-    });
-    return () => unsubscribe();
-  }, []);
+export default function Chat() {
+  const chat = useChatState();
+  const { isReady } = useSocket();
+  const { toast } = useToast();
+  const createRoom = useCreateRoom();
 
-  const handleSendMessage = (text) => {
-    mockStore.sendMessage(text);
-  };
+  const [creating, setCreating] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [drawer, setDrawer] = useState(null); // 'sidebar' | 'members' | null
 
-  const handleRoomSelect = (roomId) => {
-    mockStore.setActiveRoom(roomId);
-  };
+  const handleCreate = ({ name, visibility }, close) =>
+    createRoom.mutate(
+      { name, visibility },
+      {
+        onSuccess: (room) => {
+          close();
+          chat.selectRoom(room.id);
+          toast(`Created #${room.name}`, { variant: "success" });
+        },
+        onError: (error) => toast(error.message, { variant: "error" }),
+      }
+    );
 
-  const handleCreateRoom = (name) => {
-    return mockStore.createRoom(name);
-  };
-
-  const handleInviteUser = (username, roomId) => {
-    return mockStore.inviteToRoom(username, roomId);
-  };
-
-  const currentRoom = storeState.rooms.find(r => r.id === storeState.activeRoomId);
+  const room = chat.activeRoom;
 
   return (
-    <div className="chat-layout">
-      {/* 3-Column main UI */}
-      <Sidebar
-        rooms={storeState.rooms}
-        activeRoomId={storeState.activeRoomId}
-        unreads={storeState.unreads}
-        currentUser={storeState.currentUser}
-        onRoomSelect={handleRoomSelect}
-        onCreateRoomClick={() => setIsCreateOpen(true)}
-        onLogout={onLogout}
-        mobileOpen={mobileMenuOpen}
-        onMobileClose={() => setMobileMenuOpen(false)}
-      />
+    <div className={styles.layout}>
+      <div className={cx(styles.sidebar, drawer === "sidebar" && styles.open)}>
+        <Sidebar
+          myRooms={chat.myRooms}
+          discoverRooms={chat.discoverRooms}
+          loading={chat.loadingRooms}
+          activeRoomId={chat.activeRoomId}
+          unreadRoomIds={chat.unreadRoomIds}
+          joiningRoomId={chat.joiningRoomId}
+          onSelectRoom={(id) => {
+            chat.selectRoom(id);
+            setDrawer(null);
+          }}
+          onJoinRoom={chat.joinRoom}
+          onCreateRoom={() => setCreating(true)}
+        />
+      </div>
 
-      <ChatPanel
-        room={currentRoom}
-        messages={storeState.messages}
-        typing={storeState.typing}
-        currentUser={storeState.currentUser}
-        onSendMessage={handleSendMessage}
-        onMobileMenuToggle={() => setMobileMenuOpen(true)}
-        onMobileMembersToggle={() => setMobileMembersOpen(!mobileMembersOpen)}
-      />
+      <main className={styles.main}>
+        <ConnectionBanner visible={!isReady} />
 
-      <MembersPanel
-        members={storeState.members}
-        currentUser={storeState.currentUser}
-        onInviteClick={() => setIsInviteOpen(true)}
-        mobileOpen={mobileMembersOpen}
-        onMobileClose={() => setMobileMembersOpen(false)}
-      />
+        {!room ? (
+          <EmptyState
+            icon={chat.myRooms.length ? MessageSquare : Compass}
+            title={chat.myRooms.length ? "Pick a room" : "You're not in any rooms yet"}
+            body={
+              chat.myRooms.length
+                ? "Choose a room from the sidebar to start talking."
+                : "Browse the public rooms in the sidebar and join one."
+            }
+          />
+        ) : !room.isMember ? (
+          <LockedRoomCard
+            room={room}
+            requesting={chat.joiningRoomId === room.id}
+            onRequest={chat.joinRoom}
+          />
+        ) : (
+          <ConversationPanel
+            room={room}
+            connected={isReady}
+            onToggleSidebar={() => setDrawer("sidebar")}
+            onToggleMembers={() => setDrawer("members")}
+          />
+        )}
+      </main>
 
-      {/* Modals */}
+      {room?.isMember && (
+        <div className={cx(styles.members, drawer === "members" && styles.open)}>
+          <MembersPanel room={room} onInvite={() => setInviting(true)} />
+        </div>
+      )}
+
+      {drawer && (
+        <button
+          type="button"
+          className={styles.scrim}
+          aria-label="Close panel"
+          onClick={() => setDrawer(null)}
+        />
+      )}
+
       <CreateRoomModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onCreateRoom={handleCreateRoom}
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreate={handleCreate}
+        submitting={createRoom.isPending}
       />
 
-      <InviteModal
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        roomId={storeState.activeRoomId}
-        roomName={currentRoom ? currentRoom.name : ''}
-        onInvite={handleInviteUser}
-      />
-
-      <style>{`
-        .chat-layout {
-          display: flex;
-          height: 100vh;
-          width: 100%;
-          overflow: hidden;
-          background-color: var(--color-bg);
-          position: relative;
-        }
-
-        @media (max-width: 768px) {
-          .chat-layout {
-            flex-direction: row;
-          }
-        }
-      `}</style>
+      {room?.isMember && (
+        <InviteModal open={inviting} onClose={() => setInviting(false)} room={room} />
+      )}
     </div>
   );
 }

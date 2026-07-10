@@ -1,0 +1,150 @@
+/**
+ * Design tokens.
+ *
+ * The accent is sampled directly from the Zentro logo (#6378FF). Dark surfaces
+ * are navy tinted toward that indigo rather than neutral grey, so the brand mark
+ * sits in the UI instead of on top of it. Light surfaces are warm off-white for
+ * the same reason — pure #FFF next to a periwinkle accent reads cold.
+ *
+ * Components only ever reference semantic tokens (--surface, --text-muted...),
+ * never the raw scale. That is what makes the light theme a 20-line override.
+ */
+:root {
+  /* ── brand scale (theme-independent) ─────────────────────────────────── */
+  --indigo-50: #eef0ff;
+  --indigo-100: #dfe3ff;
+  --indigo-200: #c3cbff;
+  --indigo-300: #a3b0fd;
+  --indigo-400: #849cfa;
+  --indigo-500: #6378ff; /* ← the logo */
+  --indigo-600: #4f63e8;
+  --indigo-700: #3f4fc4;
+  --indigo-900: #1e2452;
+
+  --green-500: #22c55e;
+  --amber-500: #f59e0b;
+  --red-500: #ef4444;
+
+  /* ── typography ──────────────────────────────────────────────────────── */
+  --font-display: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  --text-xs: 0.75rem;   /* 12px — timestamps, meta */
+  --text-sm: 0.8125rem; /* 13px — labels */
+  --text-base: 0.9375rem; /* 15px — messages */
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+
+  /* ── radii — the single most brand-defining value in the inspirations ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;   /* controls */
+  --radius-lg: 16px;
+  --radius-xl: 20px;   /* cards, bubbles */
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* ── spacing (4px base) ──────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+
+  /* ── layout ──────────────────────────────────────────────────────────── */
+  --sidebar-width: 288px;
+  --members-width: 264px;
+  --header-height: 68px;
+
+  /* ── motion ──────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+
+  --z-modal: 1000;
+  --z-toast: 1100;
+}
+
+/* ── DARK (default) ────────────────────────────────────────────────────── */
+:root,
+:root[data-theme="dark"] {
+  --accent: var(--indigo-500);
+  --accent-hover: var(--indigo-400);
+  --accent-contrast: #ffffff;
+  --accent-subtle: rgba(99, 120, 255, 0.14);
+  --accent-ring: rgba(99, 120, 255, 0.4);
+
+  --bg: #0d0f17;
+  --bg-gradient: radial-gradient(120% 90% at 80% -10%, #1a1f3d 0%, #0d0f17 55%);
+  --surface: #14172233;
+  --surface-solid: #141722;
+  --surface-raised: #1b1f2e;
+  --surface-hover: #232838;
+
+  --border: #262b3b;
+  --border-strong: #333a4f;
+
+  --text: #edeef4;
+  --text-muted: #8b90a6;
+  --text-faint: #5d6379;
+
+  --bubble-me: linear-gradient(180deg, #6378ff 0%, #5468f0 100%);
+  --bubble-me-text: #ffffff;
+  --bubble-them: #1b1f2e;
+  --bubble-them-text: #e6e8f0;
+
+  --success: #34d399;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-accent: 0 8px 24px rgba(99, 120, 255, 0.32);
+
+  color-scheme: dark;
+}
+
+/* ── LIGHT ─────────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  --accent: var(--indigo-600);
+  --accent-hover: var(--indigo-700);
+  --accent-contrast: #ffffff;
+  --accent-subtle: rgba(99, 120, 255, 0.1);
+  --accent-ring: rgba(79, 99, 232, 0.35);
+
+  --bg: #f7f8fc;
+  --bg-gradient: radial-gradient(120% 90% at 80% -10%, #e9ecff 0%, #f7f8fc 55%);
+  --surface: #ffffffcc;
+  --surface-solid: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f1f2f9;
+
+  --border: #e6e8f2;
+  --border-strong: #d3d7e6;
+
+  --text: #141722;
+  --text-muted: #6b7185;
+  --text-faint: #9aa0b4;
+
+  --bubble-me: linear-gradient(180deg, #6378ff 0%, #5468f0 100%);
+  --bubble-me-text: #ffffff;
+  --bubble-them: #eef0f7;
+  --bubble-them-text: #23283a;
+
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+
+  --shadow-sm: 0 1px 2px rgba(20, 23, 34, 0.06);
+  --shadow-md: 0 8px 24px rgba(20, 23, 34, 0.08);
+  --shadow-lg: 0 24px 60px rgba(20, 23, 34, 0.12);
+  --shadow-accent: 0 8px 24px rgba(99, 120, 255, 0.28);
+
+  color-scheme: light;
+}

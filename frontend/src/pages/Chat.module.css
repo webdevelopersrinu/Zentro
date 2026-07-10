@@ -1,0 +1,72 @@
+.layout {
+  display: flex;
+  height: 100dvh; /* dvh, so the iOS keyboard cannot cover the composer */
+  overflow: hidden;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar,
+.members {
+  display: flex;
+}
+
+.scrim {
+  display: none;
+}
+
+/* ── tablet: the members panel becomes a drawer ─────────────────────────── */
+@media (max-width: 1199px) {
+  .members {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: var(--z-modal);
+    transform: translateX(100%);
+    transition: transform var(--duration-base) var(--ease-out);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .members.open {
+    transform: translateX(0);
+  }
+}
+
+/* ── phone: the sidebar becomes a drawer too ────────────────────────────── */
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--duration-base) var(--ease-out);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) - 1);
+    background: rgb(6 8 15 / 55%);
+    backdrop-filter: blur(2px);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) - 1);
+    background: rgb(6 8 15 / 55%);
+  }
+}
